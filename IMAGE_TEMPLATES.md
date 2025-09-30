@@ -13,7 +13,7 @@ Berikut adalah template link gambar yang sudah disiapkan dalam README.md. Anda t
 ![n8n Docker Status](https://via.placeholder.com/600x300/0066CC/FFFFFF?text=n8n+Docker+Containers+Running)
 ```
 **Screenshot yang dibutuhkan**: 
-- Terminal menampilkan `docker-compose ps` 
+- Terminal menampilkan `docker compose ps` 
 - Status containers running
 - Ports yang terbuka (5678)
 

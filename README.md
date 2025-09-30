@@ -67,7 +67,7 @@ sudo usermod -aG docker $USER
 
 Install Docker Compose:
 ```bash
-sudo apt install docker-compose -y
+sudo apt install docker-compose-plugin -y
 ```
 
 > Restart session atau logout dan login kembali untuk menyelesaikan instalasi docker.
@@ -241,18 +241,18 @@ sudo chmod 600 data/letsencrypt
 
 Start containers:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Cek status containers:
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 Cek logs jika ada masalah:
 ```bash
-docker-compose logs -f n8n
-docker-compose logs -f traefik
+docker compose logs -f n8n
+docker compose logs -f traefik
 ```
 
 ![n8n Docker Status](https://via.placeholder.com/600x300/0066CC/FFFFFF?text=n8n+Docker+Containers+Running)
@@ -271,7 +271,7 @@ Cek apakah SSL certificate berhasil dibuat:
 ls -la data/letsencrypt/
 
 # Cek logs Traefik untuk SSL
-docker-compose logs traefik | grep -i acme
+docker compose logs traefik | grep -i acme
 ```
 
 Akses Traefik dashboard (opsional,lanj untuk monitoring SSL saja):
@@ -295,7 +295,7 @@ sudo ufw --force enable
 
 Restart containers jika diperlukan:
 ```bash
-docker-compose restart
+docker compose restart
 ```
 
 Akses n8n melalui browser:
@@ -351,7 +351,7 @@ Berikut adalah beberapa environment variable penting yang umum digunakan untuk k
 **Panduan Penggunaan:**
 - Semua variabel di atas dapat didefinisikan di file `.env` atau langsung di bagian `environment:` pada `docker-compose.yml`.
 - Untuk keamanan, pastikan password dan data sensitif tidak di-commit ke repository publik.
-- Untuk mengubah konfigurasi, edit file `.env` lalu restart container dengan `docker-compose restart`.
+- Untuk mengubah konfigurasi, edit file `.env` lalu restart container dengan `docker compose restart`.
 - Dokumentasi lengkap environment variable n8n: https://docs.n8n.io/hosting/environment-variables/
 
 Contoh file `.env` minimal:
@@ -367,7 +367,7 @@ GENERIC_TIMEZONE=Asia/Jakarta
 
 Setelah mengubah environment variable, jalankan:
 ```bash
-docker-compose restart
+docker compose restart
 ```
 
 ### Backup Database
@@ -487,8 +487,8 @@ echo "Backing up n8n..."
 ./backup.sh
 
 echo "Updating n8n..."
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 
 echo "Update completed!"
 ```
@@ -879,4 +879,3 @@ environment:
 8. [n8n Production Setup](https://docs.n8n.io/hosting/installation/docker/#production-setup) - n8n.io
 9. [n8n Security Guidelines](https://docs.n8n.io/hosting/security/) - n8n.io
 10. [Let's Encrypt SSL Setup](https://letsencrypt.org/getting-started/) - Let's Encrypt
-11. [Nginx Security Configuration](https://nginx.org/en/docs/http/configuring_https_servers.html) - Nginx

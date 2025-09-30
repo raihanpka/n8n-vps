@@ -23,7 +23,7 @@ sudo usermod -aG docker $USER
 
 # --- Install Docker Compose ---
 echo "[3/7] Install Docker Compose..."
-sudo apt install docker-compose -y
+sudo apt install docker-compose-plugin -y
 
 # --- Setup Directory ---
 echo "[4/7] Setup direktori n8n..."
@@ -151,7 +151,7 @@ sudo ufw --force enable
 
 # --- Start Services ---
 echo "[7/7] Menjalankan n8n & Traefik..."
-docker-compose up -d
+docker compose up -d
 
 echo "=== Setup selesai! ==="
 echo "Akses n8n di: https://$DOMAIN_NAME"
