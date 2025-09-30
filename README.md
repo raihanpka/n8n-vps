@@ -50,6 +50,8 @@ ssh username@your-server-ip -p 22
 > Contoh penggunaan kami: ssh root@cloud-ieeesbipb.or.id -p 22
 > ```
 
+![Login SSH](/images/1.png)
+
 Update sistem dan install dependencies:
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -69,6 +71,7 @@ Install Docker Compose:
 ```bash
 sudo apt install docker-compose-plugin -y
 ```
+![Install Docker](/images/2.png)
 
 > Restart session atau logout dan login kembali untuk menyelesaikan instalasi docker.
 
@@ -244,6 +247,8 @@ Start containers:
 docker compose up -d
 ```
 
+![n8n Docker Compose Status](/images/3.png)
+
 Cek status containers:
 ```bash
 docker compose ps
@@ -255,13 +260,14 @@ docker compose logs -f n8n
 docker compose logs -f traefik
 ```
 
-![n8n Docker Status](https://via.placeholder.com/600x300/0066CC/FFFFFF?text=n8n+Docker+Containers+Running)
+![n8n Docker Service Status](/images/4.png)
 
 Traefik akan secara otomatis:
 - Generate SSL certificate via Let's Encrypt
 - Setup HTTPS redirect
 - Configure security headers
 - Handle reverse proxy ke n8n
+
 
 ### 6. Verifikasi SSL dan Traefik
 
@@ -273,6 +279,8 @@ ls -la data/letsencrypt/
 # Cek logs Traefik untuk SSL
 docker compose logs traefik | grep -i acme
 ```
+
+![Traefik Status](/images/5.png)
 
 Akses Traefik dashboard (opsional,lanj untuk monitoring SSL saja):
 ```
@@ -291,6 +299,8 @@ sudo ufw allow 443/tcp
 sudo ufw --force enable
 ```
 
+![Setup UFW Firewall](/images/6.png)
+
 ### 8. Final Setup
 
 Restart containers jika diperlukan:
@@ -303,7 +313,7 @@ Akses n8n melalui browser:
 https://domain-kamu.com
 ```
 
-![n8n SSL Setup Complete](https://via.placeholder.com/600x300/10B981/FFFFFF?text=n8n+SSL+Configuration+Complete)
+![n8n Dashboard](/images/10.png)
 
 ---
 
@@ -318,7 +328,11 @@ Setelah mengakses n8n untuk pertama kali, Anda akan diminta untuk membuat akun o
 2. **First Name & Last Name**: Nama lengkap administrator  
 3. **Password**: Minimum 8 karakter dengan kombinasi huruf, angka, dan simbol
 
-![n8n Owner Account Setup](https://via.placeholder.com/600x400/8B5CF6/FFFFFF?text=n8n+Owner+Account+Creation)
+![n8n Owner Account Setup](/images/7.png)
+
+4. Cek email untuk mendapatkan activation key dan ikuti instruksi untuk mengaktifkan akun Anda dengan buka link yang dikirimkan.
+
+![n8n Owner Account & License Key Activation](/images/9.png)
 
 ## Konfigurasi Umum
 
@@ -331,7 +345,7 @@ Berikut adalah beberapa environment variable penting yang umum digunakan untuk k
 | N8N_HOST                | n8n.domainkamu.com          | Domain utama instance n8n |
 | N8N_PORT                | 5678                        | Port aplikasi n8n (default 5678) |
 | N8N_PROTOCOL            | https                       | Protokol akses (http/https) |
-| WEBHOOK_URL             | https://n8n.domainkamu.com  | URL webhook publik |
+| WEBHOOK_URL             | https://domainkamu.com      | URL webhook publik |
 | GENERIC_TIMEZONE        | Asia/Jakarta                | Timezone default workflow |
 | NODE_ENV                | production                  | Mode environment (production/development) |
 | N8N_BASIC_AUTH_ACTIVE   | false                       | Aktifkan basic auth login (true/false) |
@@ -349,8 +363,7 @@ Berikut adalah beberapa environment variable penting yang umum digunakan untuk k
 | NODE_OPTIONS            | --max-old-space-size=2048   | Opsi memory Node.js |
 
 **Panduan Penggunaan:**
-- Semua variabel di atas dapat didefinisikan di file `.env` atau langsung di bagian `environment:` pada `docker-compose.yml`.
-- Untuk keamanan, pastikan password dan data sensitif tidak di-commit ke repository publik.
+- Semua variabel di atas dapat didefinisikan di file `.env` (direkomendasikan) atau langsung di bagian `environment:` pada `docker-compose.yml`.
 - Untuk mengubah konfigurasi, edit file `.env` lalu restart container dengan `docker compose restart`.
 - Dokumentasi lengkap environment variable n8n: https://docs.n8n.io/hosting/environment-variables/
 
@@ -444,7 +457,7 @@ Script ini akan memandu Anda melalui proses instalasi step-by-step dengan valida
 
 ![n8n Setup Script](https://via.placeholder.com/800x400/059669/FFFFFF?text=n8n+Automated+Setup+Script)
 
-## Cara 2: Menggunakan Cloud Services
+## Cara 2: Menggunakan Cloud Services Lainnya
 
 Alternatif lain adalah menggunakan layanan cloud yang menyediakan n8n instance siap pakai:
 
@@ -513,86 +526,65 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 3. **Credentials**: Manajemen kredensial untuk integrasi
 4. **Settings**: Pengaturan sistem dan user
 
-![n8n Dashboard Overview](https://via.placeholder.com/800x500/1F2937/FFFFFF?text=n8n+Dashboard+Interface)
+![n8n Dashboard Overview](/images/10.png)
 
 ## Membuat Workflow Pertama
 
-### 1. Create New Workflow
+### 1. Membuat Workflow Schedule: Cek Cuaca Harian dan Log ke File
 
-Klik tombol **"New Workflow"** untuk membuat workflow baru.
+1. Klik tombol **"Create Workflow"** untuk membuat workflow baru.
+2. Tambahkan node dengan cari **Schedule Trigger** dari tombol tanda "+.
+   - Pilih **Interval**: `Days`
+   - **Days Between Triggers**: `1`
+   - **Trigger at Hour**: `7am` (jam 7 pagi)
+   - **Trigger at Minute**: `0`
+   - Tekan "Execute step" untuk test lalu tekan "Back to canvas" di kiri atas untuk menyimpan perubahan.
 
-![n8n New Workflow](https://via.placeholder.com/800x400/3B82F6/FFFFFF?text=n8n+Workflow+Editor)
+  ![n8n Node - Schedule Trigger](/images/11.png)
 
-### 2. Tambah Trigger Node
+3. Tambahkan node **HTTP Request** dengan tekan tanda "+" setelah Schedule Trigger.
+   - Method: `GET`
+   - URL: `https://api.open-meteo.com/v1/forecast?latitude=-6.55712&longitude=106.72598&current_weather=true&timezone=Asia%2FJakarta`
+   - Tekan "Execute step" untuk test lalu tekan "Back to canvas" di kiri atas untuk menyimpan perubahan.
 
-Dari panel kiri, drag node **"Schedule Trigger"** atau **"Webhook"**:
+  ![n8n Node - HTTP Request](/images/12.png)
 
-**Schedule Trigger Setup:**
-- **Trigger Interval**: Every hour, daily, weekly, etc.
-- **Field**: Minute, Hour, Day, Month, Weekday
+4. Tambahkan node **Set** dengan tekan tanda "+" setelah HTTP Request, rename misalnya dengan nama `Set Cuaca`.
+   - Tekan "Add Field" dan Toggle ke `Expression` untuk setiap field:
+   - Field `tanggal`: `={{ new Date().toISOString().split('T')[0] }}`
+   - Field `suhu`: `={{ $json.current_weather.temperature }}°C`
+   - Field `kondisi`: `={{ $json.current_weather.weathercode }}`
+   - Field `kecepatan_angin`: `={{ $json.current_weather.windspeed }} km/h`
+   - Field `laporan`: `{{`Tanggal: ${$json["tanggal"]} | Suhu: ${$json["suhu"]} | Kondisi: ${$json["kondisi"]} | Angin: ${$json["kecepatan_angin"]}`}}`
+   - Tekan "Execute step" untuk test lalu tekan "Back to canvas" di kiri atas untuk menyimpan perubahan.
 
-**Webhook Setup:**
-- **HTTP Method**: GET, POST, PUT, DELETE
-- **Path**: custom path untuk webhook
-- **Response**: Data yang dikembalikan
+  ![n8n Node - Set Cuaca](/images/13.png)
 
-### 3. Tambah Action Nodes
+5. Tambahkan node **Set** lagi dengan tekan tanda "+" setelah **Set**, rename misalnya dengan nama `Laporan`.
+   - Tekan "Add Field" dan Toggle ke `Expression`
+   - Field `laporan`: `{{`Tanggal: ${$json["tanggal"]} | Suhu: ${$json["suhu"]} | Kondisi: ${$json["kondisi"]} | Angin: ${$json["kecepatan_angin"]}`}}`
+   - Tekan "Execute step" untuk test lalu tekan "Back to canvas" di kiri atas untuk menyimpan perubahan.
 
-Contoh nodes yang sering digunakan:
+  ![n8n Node - Set Laporan](/images/14.png)
 
-**HTTP Request Node:**
-```javascript
-// Untuk API calls
-URL: https://api.example.com/data
-Method: GET
-Headers: {
-  "Authorization": "Bearer {{ $json.token }}",
-  "Content-Type": "application/json"
-}
-```
+7. Tambahkan node **Convert to File** dengan tekan tanda "+" setelah Set.
+   - Pilih `Convert to text file`
+   - **Drag and drop** laporan dari bagian kiri ke kolom **Text Input Field** dan Toggle ke `Fixed`.
+   - **Put Output File in Field**: `cuaca-harian-jakarta.txt`
 
-**Function Node (JavaScript):**
-```javascript
-// Process data
-const items = $input.all();
-const processedItems = items.map(item => {
-  return {
-    json: {
-      ...item.json,
-      processed_at: new Date().toISOString(),
-      status: 'completed'
-    }
-  };
-});
+  ![n8n Node - Convert to File](/images/15.png)
 
-return processedItems;
-```
+9. Tekan **Saved** dan toggle **"Activate"** workflow.
+10. Klik **"Execute Workflow"** untuk testing secara keseluruhan.
 
-**If Node (Conditional Logic):**
-```javascript
-// Conditions
-{{ $json.status }} === 'active'
-{{ $json.amount }} > 1000
-{{ $json.created_at }} > '2024-01-01'
-```
+  ![n8n Execute Workflow](/images/16.png)
 
-### 4. Connect Nodes
+**Hasil:**
+- Setiap hari jam 7 pagi, n8n akan otomatis mengambil data cuaca Jakarta
+- Data cuaca akan disimpan ke file `cuaca-harian-jakarta.txt` di server
+- Anda bisa cek file tersebut untuk melihat log cuaca harian
 
-Hubungkan nodes dengan drag dari output port ke input port node berikutnya.
-
-![n8n Node Connection](https://via.placeholder.com/700x400/10B981/FFFFFF?text=n8n+Node+Connections)
-
-### 5. Test Workflow
-
-Klik **"Execute Workflow"** untuk test manual execution.
-
-### 6. Activate Workflow
-
-Toggle switch **"Active"** untuk mengaktifkan workflow.
-
-![n8n Workflow Activation](https://via.placeholder.com/600x300/F59E0B/FFFFFF?text=n8n+Workflow+Activated)
-
-## Contoh Workflow Praktis
+## Contoh Workflow Praktis Lainnya
 
 ### 1. Website Monitoring & Alert
 
@@ -614,8 +606,6 @@ Toggle switch **"Active"** untuk mengaktifkan workflow.
 3. **Google Drive** (upload backup file)
 4. **Slack** (send confirmation)
 
-![n8n Database Backup Workflow](https://via.placeholder.com/800x400/8B5CF6/FFFFFF?text=n8n+Database+Backup+Workflow)
-
 ### 3. Social Media Auto-posting
 
 **Tujuan**: Post content ke multiple social media
@@ -626,8 +616,6 @@ Toggle switch **"Active"** untuk mengaktifkan workflow.
 3. **Facebook** (post to page)
 4. **LinkedIn** (post to company page)
 5. **Telegram** (notify completion)
-
-![n8n Social Media Automation](https://via.placeholder.com/800x400/EF4444/FFFFFF?text=n8n+Social+Media+Automation)
 
 ## Credential Management
 
@@ -653,7 +641,6 @@ Go to **Settings** → **Credentials**:
 - MongoDB
 - Redis
 
-![n8n Credentials Management](https://via.placeholder.com/700x500/6366F1/FFFFFF?text=n8n+Credentials+Setup)
 
 ### 2. Environment Variables
 
@@ -667,45 +654,7 @@ environment:
   - AWS_SECRET_ACCESS_KEY=your-aws-secret
 ```
 
-## Debugging & Monitoring
-
-### 1. Execution History
-
-Monitor executions melalui **Executions** tab:
-- **Success**: Workflow berhasil dieksekusi
-- **Error**: Workflow gagal dengan error message
-- **Waiting**: Workflow menunggu trigger
-- **Running**: Workflow sedang berjalan
-
-![n8n Execution History](https://via.placeholder.com/800x400/059669/FFFFFF?text=n8n+Execution+Monitoring)
-
-### 2. Error Handling
-
-Gunakan **Error Trigger** node untuk handle errors:
-
-```javascript
-// Error handling di function node
-try {
-  // Workflow logic
-  const result = await apiCall();
-  return [{ json: result }];
-} catch (error) {
-  // Log error dan mengembalikan error response
-  console.error('API call failed:', error.message);
-  return [{ json: { error: error.message, status: 'failed' } }];
-}
-```
-
-### 3. Logging
-
-Enable detailed logging:
-
-```yaml
-environment:
-  - N8N_LOG_LEVEL=debug
-  - N8N_LOG_OUTPUT=console,file
-  - N8N_LOG_FILE_LOCATION=/var/log/n8n.log
-```
+---
 
 # Pembahasan
 [`^ Kembali ke atas ^`](#top)

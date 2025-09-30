@@ -1,49 +1,3 @@
-#!/bin/bash
-
-set -e
-
-echo "=== Script Instalasi n8n ==="
-
-# --- Input ---
-read -p "Masukkan Domain (contoh: domain-kamu.com): " DOMAIN_NAME
-read -p "Masukkan Email untuk SSL: " SSL_EMAIL
-read -sp "Masukkan Password Database Postgres: " POSTGRES_PASSWORD
-echo ""
-
-# --- Update & Dependencies ---
-echo "[1/7] Update & Install dependencies..."
-sudo apt update && sudo apt upgrade -y
-sudo apt install curl wget git unzip -y
-
-# --- Install Docker ---
-echo "[2/7] Install Docker..."
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-
-# --- Install Docker Compose ---
-echo "[3/7] Install Docker Compose..."
-sudo apt install docker-compose-plugin -y
-
-# --- Setup Directory ---
-echo "[4/7] Setup direktori n8n..."
-mkdir -p ~/n8n && cd ~/n8n
-
-# Buat .env
-cat > .env <<EOL
-# Domain Configuration
-DOMAIN_NAME=$DOMAIN_NAME
-SSL_EMAIL=$SSL_EMAIL
-
-# Data Directory
-DATA_FOLDER=./data
-
-# Database
-POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-EOL
-
-# Buat docker-compose.yml
-cat > docker-compose.yml <<'EOL'
 services:
   traefik:
     image: traefik
@@ -131,25 +85,3 @@ services:
 networks:
   n8n_network:
     driver: bridge
-EOL
-
-# --- Setup Data Directory ---
-echo "[5/7] Setup data directory..."
-mkdir -p data/letsencrypt data/.n8n data/postgres
-sudo chown -R 1000:1000 data/.n8n
-sudo chown -R 999:999 data/postgres
-sudo chmod 600 data/letsencrypt
-
-# --- Setup Firewall ---
-echo "[6/7] Setup firewall..."
-sudo ufw allow ssh
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw --force enable
-
-# --- Start Services ---
-echo "[7/7] Menjalankan n8n & Traefik..."
-docker compose up -d
-
-echo "=== Setup selesai! ==="
-echo "Akses n8n di: https://$DOMAIN_NAME"
