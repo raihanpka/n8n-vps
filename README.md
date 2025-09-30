@@ -455,8 +455,6 @@ chmod +x setup.sh
 
 Script ini akan memandu Anda melalui proses instalasi step-by-step dengan validasi input dan error handling yang komprehensif.
 
-![n8n Setup Script](https://via.placeholder.com/800x400/059669/FFFFFF?text=n8n+Automated+Setup+Script)
-
 ## Cara 2: Menggunakan Cloud Services Lainnya
 
 Alternatif lain adalah menggunakan layanan cloud yang menyediakan n8n instance siap pakai:
@@ -467,23 +465,17 @@ Alternatif lain adalah menggunakan layanan cloud yang menyediakan n8n instance s
    - Pilih "Marketplace" → Cari "n8n"
    - Klik "Create n8n Droplet"
 
-   ![DigitalOcean n8n](https://via.placeholder.com/600x300/0066CC/FFFFFF?text=DigitalOcean+n8n+1-Click+Install)
-
 2. **Railway**
    - Kunjungi [Railway.app](https://railway.app)
    - Klik "Deploy n8n"
    - Connect dengan GitHub account
    - Deploy otomatis dalam beberapa menit
 
-   ![Railway Deploy](https://via.placeholder.com/600x300/8B5CF6/FFFFFF?text=Railway+n8n+Deploy)
-
 3. **Render**
    - Kunjungi [Render.com](https://render.com)
    - Pilih "New" → "Blueprint"
    - Cari "n8n" template
    - Deploy dengan satu klik
-
-   ![Render Blueprint](https://via.placeholder.com/600x300/10B981/FFFFFF?text=Render+n8n+Blueprint)
 
 ## Update Otomatis
 
