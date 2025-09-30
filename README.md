@@ -27,16 +27,16 @@ n8n dikembangkan pertama kali pada tahun 2019 dan dengan cepat berkembang menjad
 
 ### Minimum Requirements:
 - **OS**: Ubuntu 22.04 LTS atau yang lebih baru dan setara
-- **RAM**: 2GB (3GB direkomendasikan)
+- **RAM**: 1GB (2GB+ direkomendasikan)
 - **Storage**: 10GB free space
-- **CPU**: 1 vCPU (2 vCPU direkomendasikan)
+- **CPU**: 1 vCPU
 - **Network**: Koneksi internet yang stabil
 
 ### Prerequisites:
 - Root access atau sudo privileges
 - Docker dan Docker Compose terinstall
-- Email address untuk SSL certificate
-- Domain name yang sudah diarahkan ke server (opsional)
+- Email address pribadi untuk SSL certificate
+- Domain name yang sudah diarahkan ke server (opsional, tetap bisa pakai IP Public dari VPS)
 
 ## Proses Instalasi
 
@@ -79,6 +79,26 @@ Buat directory untuk n8n:
 mkdir ~/n8n && cd ~/n8n
 ```
 
+Buat file .env untuk environment variables:
+```bash
+nano .env
+```
+
+Isi dengan konfigurasi berikut:
+```env
+# Domain Configuration
+DOMAIN_NAME=domain-kamu.com
+SSL_EMAIL=username@gmail.com
+
+# Data Directory
+DATA_FOLDER=./data
+
+# Database
+POSTGRES_PASSWORD=password123
+```
+
+> **Penting**: Ganti `domain-kamu.com` dengan domain Anda, `username@gmail.com` dengan email Anda, dan `password123` dengan password yang kuat.
+
 Buat file docker-compose.yml:
 ```bash
 nano docker-compose.yml
@@ -86,9 +106,35 @@ nano docker-compose.yml
 
 Isi dengan konfigurasi berikut:
 ```yaml
-version: '3.8'
+version: '1.0'
 
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: n8n_traefik
+    restart: unless-stopped
+    command:
+      - '--api=true'
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--certificatesresolvers.mytlschallenge.acme.tlschallenge=true'
+      - '--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}'
+      - '--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json'
+      - '--entrypoints.web.http.redirections.entryPoint.to=websecure'
+      - '--entrypoints.web.http.redirections.entryPoint.scheme=https'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ${DATA_FOLDER}/letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - n8n_network
+
   postgres:
     image: postgres:14
     container_name: n8n_postgres
@@ -96,9 +142,9 @@ services:
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_USER=n8n
-      - POSTGRES_PASSWORD=n8n_strong_password_123
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${DATA_FOLDER}/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U n8n"]
       interval: 30s
@@ -108,11 +154,9 @@ services:
       - n8n_network
 
   n8n:
-    image: n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:latest
     container_name: n8n_app
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:5678:5678"
     environment:
       # Database
       - DB_TYPE=postgresdb
@@ -120,10 +164,10 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=n8n
       - DB_POSTGRESDB_USER=n8n
-      - DB_POSTGRESDB_PASSWORD=n8n_strong_password_123
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
       
       # General
-      - N8N_HOST=https://domain-kamu.com
+      - N8N_HOST=${DOMAIN_NAME}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
@@ -133,7 +177,7 @@ services:
       - N8N_SECURE_COOKIE=true
       
       # Webhooks
-      - WEBHOOK_URL=https://domain-kamu.com
+      - WEBHOOK_URL=https://${DOMAIN_NAME}
       - GENERIC_TIMEZONE=Asia/Jakarta
       
       # Performance
@@ -147,7 +191,21 @@ services:
       - EXECUTIONS_DATA_MAX_AGE=168
       
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ${DATA_FOLDER}/.n8n:/home/node/.n8n
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.n8n.rule=Host(`${DOMAIN_NAME}`)
+      - traefik.http.routers.n8n.tls=true
+      - traefik.http.routers.n8n.entrypoints=websecure
+      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
+      - traefik.http.middlewares.n8n-headers.headers.SSLRedirect=true
+      - traefik.http.middlewares.n8n-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.n8n-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.n8n-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.n8n-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.n8n-headers.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.n8n-headers.headers.STSPreload=true
+      - traefik.http.routers.n8n.middlewares=n8n-headers
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,18 +214,30 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
   n8n_data:
-    driver: local
 
 networks:
   n8n_network:
     driver: bridge
 ```
 
-> **Penting**: Ganti `domain-kamu.com` dengan domain Anda dan `n8n_strong_password_123` dengan password yang kuat.
+### 4. Setup Data Directory
 
-### 4. Jalankan n8n
+Buat direktori data untuk persistent storage:
+```bash
+mkdir -p data/letsencrypt
+mkdir -p data/.n8n
+mkdir -p data/postgres
+```
+
+Set permissions yang benar:
+```bash
+sudo chown -R 1000:1000 data/.n8n
+sudo chown -R 999:999 data/postgres
+sudo chmod 600 data/letsencrypt
+```
+
+### 5. Jalankan n8n dengan Traefik
 
 Start containers:
 ```bash
@@ -181,137 +251,50 @@ docker-compose ps
 
 Cek logs jika ada masalah:
 ```bash
-docker-compose logs n8n
+docker-compose logs -f n8n
+docker-compose logs -f traefik
 ```
 
 ![n8n Docker Status](https://via.placeholder.com/600x300/0066CC/FFFFFF?text=n8n+Docker+Containers+Running)
 
-### 5. Setup Reverse Proxy dengan Nginx
+Traefik akan secara otomatis:
+- Generate SSL certificate via Let's Encrypt
+- Setup HTTPS redirect
+- Configure security headers
+- Handle reverse proxy ke n8n
 
-Install Nginx:
+### 6. Verifikasi SSL dan Traefik
+
+Cek apakah SSL certificate berhasil dibuat:
 ```bash
-sudo apt install nginx -y
+# Cek file acme.json
+ls -la data/letsencrypt/
+
+# Cek logs Traefik untuk SSL
+docker-compose logs traefik | grep -i acme
 ```
 
-Buat konfigurasi Nginx:
-```bash
-sudo nano /etc/nginx/sites-available/n8n
+Akses Traefik dashboard (opsional,lanj untuk monitoring SSL saja):
+```
+http://your-server-ip:8080
 ```
 
-Isi dengan konfigurasi berikut:
-```nginx
-server {
-    listen 80;
-    server_name domain-kamu.com www.domain-kamu.com;
-    
-    # Redirect HTTP to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name domain-kamu.com www.domain-kamu.com;
-    
-    # SSL configuration will be added by Certbot
-    
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    
-    # Rate limiting
-    limit_req_zone $binary_remote_addr zone=n8n_limit:10m rate=10r/m;
-    limit_req zone=n8n_limit burst=20 nodelay;
-    
-    # Proxy configuration
-    location / {
-        proxy_pass http://127.0.0.1:5678;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-        
-        # Increase timeout for long-running workflows
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-        
-        # Increase body size for file uploads
-        client_max_body_size 50M;
-    }
-    
-    # Webhook endpoint optimization
-    location /webhook {
-        proxy_pass http://127.0.0.1:5678;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
-        
-        # Disable rate limiting for webhooks
-        limit_req off;
-    }
-    
-    # Health check endpoint
-    location /healthz {
-        proxy_pass http://127.0.0.1:5678;
-        access_log off;
-    }
-}
-```
-> Jangan lupa ganti `domain-kamu.com` dengan domain Anda.
-
-Enable site dan test konfigurasi:
-```bash
-sudo ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 6. Setup SSL dengan Let's Encrypt
-
-Install Certbot:
-```bash
-sudo apt install certbot python3-certbot-nginx -y
-```
-
-Dapatkan SSL certificate:
-```bash
-sudo certbot --nginx -d domain-kamu.com -d www.domain-kamu.com
-```
-
-Setup auto-renewal:
-```bash
-sudo crontab -e
-```
-
-Tambahkan baris berikut:
-```
-0 12 * * * /usr/bin/certbot renew --quiet
-```
+> Traefik akan otomatis handle SSL renewal, tidak perlu setup cron job manual.
 
 ### 7. Konfigurasi Firewall
 
 Setup UFW firewall:
 ```bash
 sudo ufw allow ssh
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw --force enable
 ```
 
 ### 8. Final Setup
 
-Restart semua services:
+Restart containers jika diperlukan:
 ```bash
-sudo systemctl restart nginx
 docker-compose restart
 ```
 
@@ -339,36 +322,55 @@ Setelah mengakses n8n untuk pertama kali, Anda akan diminta untuk membuat akun o
 
 ## Konfigurasi Umum
 
-### Environment Variables
+### Environment Variables n8n
 
-Edit file docker-compose.yml untuk menyesuaikan konfigurasi:
+Berikut adalah beberapa environment variable penting yang umum digunakan untuk konfigurasi n8n self-hosted:
 
-```yaml
-environment:
-  # Timezone
-  - GENERIC_TIMEZONE=Asia/Jakarta
-  
-  # Email settings (untuk notifications)
-  - N8N_EMAIL_MODE=smtp
-  - N8N_SMTP_HOST=smtp.gmail.com
-  - N8N_SMTP_PORT=587
-  - N8N_SMTP_USER=your-email@gmail.com
-  - N8N_SMTP_PASS=your-app-password
-  - N8N_SMTP_SENDER=your-email@gmail.com
-  
-  # Execution settings
-  - EXECUTIONS_TIMEOUT=3600
-  - EXECUTIONS_TIMEOUT_MAX=7200
-  - EXECUTIONS_DATA_SAVE_ON_ERROR=all
-  - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
-  - EXECUTIONS_DATA_MAX_AGE=168
-  
-  # Security
-  - N8N_SECURE_COOKIE=true
-  - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+| Variabel                | Contoh Nilai                | Keterangan |
+|-------------------------|-----------------------------|------------|
+| N8N_HOST                | n8n.domainkamu.com          | Domain utama instance n8n |
+| N8N_PORT                | 5678                        | Port aplikasi n8n (default 5678) |
+| N8N_PROTOCOL            | https                       | Protokol akses (http/https) |
+| WEBHOOK_URL             | https://n8n.domainkamu.com  | URL webhook publik |
+| GENERIC_TIMEZONE        | Asia/Jakarta                | Timezone default workflow |
+| NODE_ENV                | production                  | Mode environment (production/development) |
+| N8N_BASIC_AUTH_ACTIVE   | false                       | Aktifkan basic auth login (true/false) |
+| N8N_BASIC_AUTH_USER     | admin                       | Username basic auth (jika aktif) |
+| N8N_BASIC_AUTH_PASSWORD | passwordku                  | Password basic auth (jika aktif) |
+| N8N_SECURE_COOKIE       | true                        | Cookie hanya dikirim via HTTPS |
+| DB_TYPE                 | postgresdb                  | Tipe database (postgresdb/sqlite) |
+| DB_POSTGRESDB_HOST      | postgres                    | Host database Postgres |
+| DB_POSTGRESDB_PORT      | 5432                        | Port database Postgres |
+| DB_POSTGRESDB_DATABASE  | n8n                         | Nama database Postgres |
+| DB_POSTGRESDB_USER      | n8n                         | User database Postgres |
+| DB_POSTGRESDB_PASSWORD  | (isi dari .env)             | Password database Postgres |
+| EXECUTIONS_TIMEOUT      | 3600                        | Timeout eksekusi workflow (detik) |
+| EXECUTIONS_DATA_MAX_AGE | 168                         | Lama penyimpanan data eksekusi (jam) |
+| NODE_OPTIONS            | --max-old-space-size=2048   | Opsi memory Node.js |
+
+**Panduan Penggunaan:**
+- Semua variabel di atas dapat didefinisikan di file `.env` atau langsung di bagian `environment:` pada `docker-compose.yml`.
+- Untuk keamanan, pastikan password dan data sensitif tidak di-commit ke repository publik.
+- Untuk mengubah konfigurasi, edit file `.env` lalu restart container dengan `docker-compose restart`.
+- Dokumentasi lengkap environment variable n8n: https://docs.n8n.io/hosting/environment-variables/
+
+Contoh file `.env` minimal:
+```env
+DOMAIN_NAME=domain-kamu.com
+SSL_EMAIL=username@gmail.com
+DATA_FOLDER=./data
+POSTGRES_PASSWORD=passwordku
+N8N_HOST=domain-kamu.com
+N8N_PROTOCOL=https
+GENERIC_TIMEZONE=Asia/Jakarta
 ```
 
-### Database Backup Configuration
+Setelah mengubah environment variable, jalankan:
+```bash
+docker-compose restart
+```
+
+### Backup Database
 
 Buat script backup otomatis:
 ```bash
@@ -407,41 +409,6 @@ Tambahkan untuk backup harian:
 0 2 * * * /home/user/n8n/backup.sh >> /var/log/n8n-backup.log 2>&1
 ```
 
-### Keamanan dan SSL
-
-Pastikan SSL certificate selalu up-to-date:
-
-```bash
-# Test renewal
-sudo certbot renew --dry-run
-
-# Paksa renewal jika diperlukan
-sudo certbot renew --force-renewal
-```
-
-### Security Headers dan Data Encryption
-
-Nginx sudah dikonfigurasi dengan security headers. Untuk tambahan keamanan:
-
-```nginx
-# Tambahan security headers
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-add_header X-Robots-Tag "noindex, nofollow" always;
-add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
-```
-
-Aktifkan encryption untuk sensitive data:
-
-```yaml
-environment:
-  - N8N_ENCRYPTION_KEY=your-very-long-random-encryption-key-here
-```
-
-Generate encryption key:
-```bash
-openssl rand -base64 32
-```
-
 ---
 
 # Otomatisasi
@@ -456,7 +423,7 @@ Cara termudah adalah menggunakan script otomatisasi lengkap yang telah disediaka
 **Download dan jalankan setup.sh:**
 
 ```bash
-# Download script
+# Download script secara langsung
 wget https://raw.githubusercontent.com/raihanpka/n8n-vps/main/setup.sh
 
 # Atau clone repository
@@ -469,11 +436,11 @@ chmod +x setup.sh
 ```
 
 **Input yang diperlukan:**
-- Domain name (e.g., n8n.yourdomain.com)
+- Domain name (e.g., domain-kamu.com)
 - Email untuk SSL certificate
-- Timezone selection
+- Password untuk database
 
-Script akan memandu Anda melalui proses instalasi step-by-step dengan validasi input dan error handling yang komprehensif.
+Script ini akan memandu Anda melalui proses instalasi step-by-step dengan validasi input dan error handling yang komprehensif.
 
 ![n8n Setup Script](https://via.placeholder.com/800x400/059669/FFFFFF?text=n8n+Automated+Setup+Script)
 
