@@ -102,18 +102,16 @@ POSTGRES_PASSWORD=password123
 
 > **Penting**: Ganti `domain-kamu.com` dengan domain Anda, `username@gmail.com` dengan email Anda, dan `password123` dengan password yang kuat.
 
-Buat file docker-compose.yml:
+Buat file `docker-compose.yml` atau bisa cek file `docker-compose.yml` yang ada di repository:
 ```bash
 nano docker-compose.yml
 ```
 
 Isi dengan konfigurasi berikut:
 ```yaml
-version: '1.0'
-
 services:
   traefik:
-    image: traefik:v2.10
+    image: traefik
     container_name: n8n_traefik
     restart: unless-stopped
     command:
