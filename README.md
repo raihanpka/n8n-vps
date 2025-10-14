@@ -40,6 +40,24 @@ n8n dikembangkan pertama kali pada tahun 2019 dan dengan cepat berkembang menjad
 
 ## Proses Instalasi
 
+### Opsional: Persiapan Domain
+
+Jika Anda menggunakan layanan DNS seperti Cloudflare, lakukan langkah berikut untuk mengarahkan domain ke server VPS Anda:
+
+1. Login ke dashboard Cloudflare.
+2. Pilih domain yang ingin digunakan.
+3. Buka menu **DNS**.
+4. Tambahkan **A record** baru:
+  - **Name**: `cloud` (atau subdomain dengan nama lainnya, misal `n8n`)
+  - **IPv4 address**: Masukkan IP Public VPS Anda
+  - **TTL**: Auto
+  - **Proxy status**: Off
+
+5. Simpan perubahan dan tunggu propagasi DNS (biasanya beberapa menit).
+
+![Setting A Record di Cloudflare](/images/dns.png) 
+
+
 ### 1. Persiapan Server
 
 Login ke server menggunakan SSH dan masukkan kredensial (key/password):
@@ -523,7 +541,7 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 ### 1. Membuat Workflow Schedule: Cek Cuaca Harian dan Log ke File
 
 1. Klik tombol **"Create Workflow"** untuk membuat workflow baru.
-2. Tambahkan node dengan cari **Schedule Trigger** dari tombol tanda "+.
+2. Tambahkan node dengan cari **Schedule Trigger** dari tombol tanda "+".
    - Pilih **Interval**: `Days`
    - **Days Between Triggers**: `1`
    - **Trigger at Hour**: `7am` (jam 7 pagi)

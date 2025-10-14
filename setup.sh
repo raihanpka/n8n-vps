@@ -13,17 +13,17 @@ echo ""
 # --- Update & Dependencies ---
 echo "[1/7] Update & Install dependencies..."
 sudo apt update && sudo apt upgrade -y
-sudo apt install curl wget git unzip -y
+sudo apt install -y curl wget git unzip
 
 # --- Install Docker ---
 echo "[2/7] Install Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 
 # --- Install Docker Compose ---
 echo "[3/7] Install Docker Compose..."
-sudo apt install docker-compose-plugin -y
+sudo apt install -y docker-compose-plugin
 
 # --- Setup Directory ---
 echo "[4/7] Setup direktori n8n..."
@@ -42,7 +42,7 @@ DATA_FOLDER=./data
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 EOL
 
-# Buat docker-compose.yml
+# Buat file docker-compose.yml
 cat > docker-compose.yml <<'EOL'
 services:
   traefik:
@@ -50,23 +50,23 @@ services:
     container_name: n8n_traefik
     restart: unless-stopped
     command:
-      - '--api=true'
-      - '--api.insecure=true'
-      - '--api.dashboard=true'
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      - '--entrypoints.web.address=:80'
-      - '--entrypoints.websecure.address=:443'
-      - '--certificatesresolvers.mytlschallenge.acme.tlschallenge=true'
-      - '--certificatesresolvers.mytlschallenge.acme.email=\${SSL_EMAIL}'
-      - '--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json'
-      - '--entrypoints.web.http.redirections.entryPoint.to=websecure'
-      - '--entrypoints.web.http.redirections.entryPoint.scheme=https'
+      - --api=true
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.mytlschallenge.acme.tlschallenge=true
+      - --certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}
+      - --certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
     ports:
-      - '80:80'
-      - '443:443'
+      - "80:80"
+      - "443:443"
     volumes:
-      - \${DATA_FOLDER}/letsencrypt:/letsencrypt
+      - ${DATA_FOLDER}/letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - n8n_network
@@ -78,9 +78,9 @@ services:
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_USER=n8n
-      - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - \${DATA_FOLDER}/postgres:/var/lib/postgresql/data
+      - ${DATA_FOLDER}/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U n8n"]
       interval: 30s
@@ -99,14 +99,14 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=n8n
       - DB_POSTGRESDB_USER=n8n
-      - DB_POSTGRESDB_PASSWORD=\${POSTGRES_PASSWORD}
-      - N8N_HOST=\${DOMAIN_NAME}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_HOST=${DOMAIN_NAME}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_SECURE_COOKIE=true
-      - WEBHOOK_URL=https://\${DOMAIN_NAME}
+      - WEBHOOK_URL=https://${DOMAIN_NAME}
       - GENERIC_TIMEZONE=Asia/Jakarta
       - NODE_OPTIONS=--max-old-space-size=2048
       - EXECUTIONS_TIMEOUT=3600
@@ -115,10 +115,10 @@ services:
       - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
       - EXECUTIONS_DATA_MAX_AGE=168
     volumes:
-      - \${DATA_FOLDER}/.n8n:/home/node/.n8n
+      - ${DATA_FOLDER}/.n8n:/home/node/.n8n
     labels:
       - traefik.enable=true
-      - traefik.http.routers.n8n.rule=Host(\`\${DOMAIN_NAME}\`)
+      - traefik.http.routers.n8n.rule=Host("${DOMAIN_NAME}")
       - traefik.http.routers.n8n.tls=true
       - traefik.http.routers.n8n.entrypoints=websecure
       - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
