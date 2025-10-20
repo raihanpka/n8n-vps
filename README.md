@@ -525,6 +525,11 @@ crontab -e
 # Cara Pemakaian
 [`^ Kembali ke atas ^`](#top)
 
+## Mendaftarkan Akun Owner
+Setelah instalasi selesai dan Anda mengakses n8n untuk pertama kali, Anda akan diminta untuk membuat akun owner:
+1. Masukkan email, nama depan, nama belakang, dan password untuk akun admin.
+2. Cek email untuk mendapatkan **activation key** dan ikuti instruksi untuk mengaktifkan akun Anda dengan membuka link yang dikirimkan.
+
 ## Dashboard Overview
 
 Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
@@ -535,6 +540,15 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 4. **Settings**: Pengaturan sistem dan user
 
 ![n8n Dashboard Overview](/images/10.png)
+
+## Menambahkan User atau Akun Lain
+1. Buka menu **Settings** di pojok kiri bawah pada profile owner.
+2. Pilih opsi **Users**.
+3. Klik tombol **"Invite"** untuk menambahkan user baru dengan memasukkan email dengan mengatur peran (role) seperti Member.
+4. Secara otomatis, link invitation akan dicopy ke clipboard atau bisa tekan tombol **"Copy Invitation Link"**.
+5. Bagikan link tersebut ke user yang ingin Anda undang untuk membuat akun di n8n Anda.
+
+![n8n Invite User](/images/invite.png)
 
 ## Membuat Workflow Pertama
 
@@ -587,10 +601,30 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 
   ![n8n Execute Workflow](/images/16.png)
 
+11. Jika kita tidak mau hanya menyimpan file nya saja, tapi juga mengirimkan teksnya ke email, kita bisa menambahkan node **Send Email** setelah node **Laporan** pada **tahap 5**. Jangan lupa kamu perlu setup SMTP credentials di bagian **Credentials** terlebih dahulu (terdiri dari Username, App Password, Host serta Port).
+   - Untuk Gmail, kamu bisa menggunakan setting berikut:
+     - **Host**: `smtp.gmail.com`
+     - **Port**: `465`
+     - **Secure**: `true`
+     - **Username**: Alamat Gmail
+     - **Password**: Buat app password dari Google Account kamu, [cek di sini](https://support.google.com/accounts/answer/185833?hl=id)
+   - Untuk provider email lainnya, silakan sesuaikan pengaturan SMTP sesuai dengan dokumentasi penyedia layanan email tersebut.
+
+   ![n8n Credential - SMTP Email](/images/17.png)
+
+12. Konfigurasi node **Send Email** dengan contoh pengaturan berikut:
+   - **To**: masukkan email tujuan
+   - **Subject**: `Laporan Cuaca Harian Jakarta`
+   - **Text**: Drag and drop laporan dari bagian kiri ke kolom **Text** dan Toggle ke `Fixed`.
+   - Tekan "Execute step" untuk test lalu tekan "Back to canvas" di kiri atas untuk menyimpan perubahan.
+
+  ![n8n Node - Send Email](/images/18.png)
+
 **Hasil:**
 - Setiap hari jam 7 pagi, n8n akan otomatis mengambil data cuaca Jakarta
-- Data cuaca akan disimpan ke file `cuaca-harian-jakarta.txt` di server
-- Anda bisa cek file tersebut untuk melihat log cuaca harian
+- Data cuaca akan langsung terkirim ke email yang dituju
+
+![n8n Final Result on Email](/images/result.png)
 
 ## Contoh Workflow Praktis Lainnya
 
@@ -625,7 +659,7 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 4. **LinkedIn** (post to company page)
 5. **Telegram** (notify completion)
 
-## Credential Management
+## Credential Management (Extras)
 
 ### 1. Setup API Credentials
 
