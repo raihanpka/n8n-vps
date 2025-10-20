@@ -601,7 +601,7 @@ Setelah login, Anda akan melihat dashboard utama n8n dengan beberapa section:
 
   ![n8n Execute Workflow](/images/16.png)
 
-11. Jika kita tidak mau hanya menyimpan file nya saja, tapi juga mengirimkan teksnya ke email, kita bisa menambahkan node **Send Email** setelah node **Laporan** pada **tahap 5**. Jangan lupa kamu perlu setup SMTP credentials di bagian **Credentials** terlebih dahulu (terdiri dari Username, App Password, Host serta Port).
+11. Jika kita tidak mau hanya menyimpan file nya, tetapi lebih ingin mengirimkan teksnya sebagai pesan email, kita bisa menambahkan node **Send Email** setelah node **Laporan** pada **tahap 5**. Jangan lupa kamu perlu setup SMTP credentials di bagian **Credentials** terlebih dahulu (terdiri dari Username, App Password, Host serta Port).
    - Untuk Gmail, kamu bisa menggunakan setting berikut:
      - **Host**: `smtp.gmail.com`
      - **Port**: `465`
